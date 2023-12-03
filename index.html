@@ -1,112 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agora WebRTC Video Call</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        #localVideoContainer,
-        #remoteVideoContainer {
-            width: 300px;
-            height: 200px;
-            margin-bottom: 20px;
-            overflow: hidden;
-            border: 1px solid #ccc;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-        }
-
-        #controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        #controls button {
-            padding: 10px;
-            font-size: 16px;
-        }
-    </style>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>PeerChat</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
 </head>
 <body>
-    <div id="localVideoContainer">
-        <video id="localVideo" autoplay muted></video>
+
+    <div id="videos">
+        <video class="video-player" id="user-1" autoplay playsinline></video>
+        <video class="video-player" id="user-2" autoplay playsinline></video>
     </div>
-    <div id="remoteVideoContainer">
-        <video id="remoteVideo" autoplay></video>
-    </div>
+
     <div id="controls">
-        <button id="startButton">Start Call</button>
-        <button id="endButton">End Call</button>
+
+        <div class="control-container" id="camera-btn">
+            <img src="icons/camera.png" />
+        </div>
+
+        <div class="control-container" id="mic-btn">
+            <img src="icons/mic.png" />
+        </div>
+
+        <a href="lobby.html">
+            <div class="control-container" id="leave-btn">
+                <img src="icons/phone.png" />
+            </div>
+        </a>
+
     </div>
-
-    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.19.3.js"></script>
-    <script>
-        const agoraAppId = '80f8dce39b6547e08985621deff72f8a';
-        let localStream;
-        let agoraClient;
-
-        const localVideo = document.getElementById('localVideo');
-        const remoteVideo = document.getElementById('remoteVideo');
-        const startButton = document.getElementById('startButton');
-        const endButton = document.getElementById('endButton');
-
-        startButton.addEventListener('click', startCall);
-        endButton.addEventListener('click', endCall);
-
-        async function startCall() {
-            agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-
-            localStream = AgoraRTC.createMicrophoneAndCameraTracks();
-            await agoraClient.join(agoraAppId, '9140026966', null, null);
-            await agoraClient.publish(localStream);
-
-            localStream.play(localVideo);
-
-            agoraClient.on('user-published', async (user, mediaType) => {
-                // Subscribe to remote user's audio and video tracks
-                await agoraClient.subscribe(user, mediaType);
-                
-                if (mediaType === 'video') {
-                    const remoteVideoTrack = user.videoTrack;
-                    if (remoteVideoTrack) {
-                        remoteVideoTrack.play(remoteVideo);
-                    } else {
-                        console.error('Remote video track is not available');
-                    }
-                }
-            });
-
-            agoraClient.on('user-unpublished', (user, mediaType) => {
-                if (mediaType === 'video') {
-                    const remoteVideoTrack = user.videoTrack;
-                    if (remoteVideoTrack) {
-                        remoteVideoTrack.stop();
-                        remoteVideoTrack.close();
-                    }
-                }
-            });
-        }
-
-        function endCall() {
-            agoraClient.leave();
-            localStream.close();
-            localStream = null;
-
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
-        }
-    </script>
+    
 </body>
+<script src='agora-rtm-sdk-1.4.4.js'></script>
+<script src='main.js'></script>
 </html>
