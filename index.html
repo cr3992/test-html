@@ -13,7 +13,7 @@
             height: 100vh;
             margin: 0;
         }
-        
+
         #localVideoContainer,
         #remoteVideoContainer {
             width: 300px;
@@ -22,24 +22,22 @@
             overflow: hidden;
             border: 1px solid #ccc;
         }
-        
+
         video {
             width: 100%;
             height: 100%;
         }
-        
+
         #controls {
             display: flex;
             gap: 10px;
         }
-        
+
         #controls button {
             padding: 10px;
             font-size: 16px;
         }
-        
     </style>
-    <script src="https://cdn.agora.io/sdk/release/AgoraRTCSDK-3.6.1.js"></script>
 </head>
 <body>
     <div id="localVideoContainer">
@@ -53,10 +51,10 @@
         <button id="endButton">End Call</button>
     </div>
 
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.19.3.js"></script>
     <script>
-        const agoraAppId = '80f8dce39b6547e08985621deff72f8a'; // Replace with your Agora App ID
+        const agoraAppId = '80f8dce39b6547e08985621deff72f8a';
         let localStream;
-        let remoteStream;
         let agoraClient;
 
         const localVideo = document.getElementById('localVideo');
@@ -68,45 +66,47 @@
         endButton.addEventListener('click', endCall);
 
         async function startCall() {
-            // Create Agora client
             agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
-            // Initialize Agora client with your App ID
-            await agoraClient.init(agoraAppId);
-
-            // Create a local stream
-            localStream = AgoraRTC.createStream({ streamID: 1, audio: true, video: true, screen: false });
-            await localStream.init();
-
-            // Play the local stream
-            localStream.play('localVideo');
-
-            // Join a channel with a unique name
-            await agoraClient.join(null, '9140026966', null, null);
-
-            // Publish the local stream to the channel
+            localStream = AgoraRTC.createMicrophoneAndCameraTracks();
+            await agoraClient.join(agoraAppId, '9140026966', null, null);
             await agoraClient.publish(localStream);
 
-            // Listen for remote streams
-            agoraClient.on('stream-added', async (evt) => {
-                const remoteStream = evt.stream;
-                // Subscribe to the remote stream
-                await agoraClient.subscribe(remoteStream);
+            localStream.play(localVideo);
+
+            agoraClient.on('user-published', async (user, mediaType) => {
+                // Subscribe to remote user's audio and video tracks
+                await agoraClient.subscribe(user, mediaType);
+                
+                if (mediaType === 'video') {
+                    const remoteVideoTrack = user.videoTrack;
+                    if (remoteVideoTrack) {
+                        remoteVideoTrack.play(remoteVideo);
+                    } else {
+                        console.error('Remote video track is not available');
+                    }
+                }
             });
 
-            agoraClient.on('stream-subscribed', (evt) => {
-                const remoteStream = evt.stream;
-                // Play the remote stream
-                remoteStream.play('remoteVideo');
+            agoraClient.on('user-unpublished', (user, mediaType) => {
+                if (mediaType === 'video') {
+                    const remoteVideoTrack = user.videoTrack;
+                    if (remoteVideoTrack) {
+                        remoteVideoTrack.stop();
+                        remoteVideoTrack.close();
+                    }
+                }
             });
         }
 
         function endCall() {
-            // Unpublish the local stream and leave the channel
-            agoraClient.unpublish(localStream);
             agoraClient.leave();
-        }
+            localStream.close();
+            localStream = null;
 
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+        }
     </script>
 </body>
 </html>
